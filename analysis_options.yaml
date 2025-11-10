@@ -8,8 +8,8 @@ linter:
     prefer_relative_imports: true
     specify_nonobvious_property_types: false
     one_member_abstracts: false
-    sort_unnamed_constructors_first: true
-    sort_constructors_first: true
+    sort_unnamed_constructors_first: false
+    sort_constructors_first: false
     discarded_futures: true
     prefer_expression_function_bodies: true
 
