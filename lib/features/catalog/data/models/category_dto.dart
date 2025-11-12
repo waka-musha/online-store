@@ -11,7 +11,11 @@ class CategoryDto {
   });
 
   final String id;
+
+  @JsonKey(name: 'name')
   final String title;
+
+  @JsonKey(name: 'url')
   final String code;
 
   factory CategoryDto.fromJson(Map<String, dynamic> json) =>

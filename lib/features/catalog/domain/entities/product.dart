@@ -8,7 +8,7 @@ abstract class Product with _$Product {
 
   const factory Product({
     required String id,
-    required String title,
+    required String name,
     required int price,
     @Default(<String>[]) List<String> imageUrls,
     @Default(<String>[]) List<String> sizes,

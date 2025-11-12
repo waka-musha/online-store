@@ -6,18 +6,30 @@ part 'product_dto.g.dart';
 class ProductDto {
   const ProductDto({
     required this.id,
-    required this.title,
-    required this.price,
-    this.imageUrls = const <String>[],
-    this.sizes = const <String>[],
+    this.name,
+    this.price,
+    this.finalPrice,
+    this.images,
+    this.sizeDetails,
   });
 
+  @JsonKey(fromJson: _idToString)
   final String id;
-  final String title;
-  final int price;
-  @JsonKey(name: 'image_urls')
-  final List<String> imageUrls;
-  final List<String> sizes;
+
+  static String _idToString(Object? v) => v?.toString() ?? '';
+
+  final String? name;
+
+  final int? price;
+
+  @JsonKey(name: 'final_price')
+  final int? finalPrice;
+
+  @JsonKey(name: 'photos')
+  final List<dynamic>? images;
+
+  @JsonKey(name: 'size_details')
+  final List<dynamic>? sizeDetails;
 
   factory ProductDto.fromJson(Map<String, dynamic> json) =>
       _$ProductDtoFromJson(json);

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Product {
 
- String get id; String get title; int get price; List<String> get imageUrls; List<String> get sizes;
+ String get id; String get name; int get price; List<String> get imageUrls; List<String> get sizes;
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ProductCopyWith<Product> get copyWith => _$ProductCopyWithImpl<Product>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.price, price) || other.price == price)&&const DeepCollectionEquality().equals(other.imageUrls, imageUrls)&&const DeepCollectionEquality().equals(other.sizes, sizes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.price, price) || other.price == price)&&const DeepCollectionEquality().equals(other.imageUrls, imageUrls)&&const DeepCollectionEquality().equals(other.sizes, sizes));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,price,const DeepCollectionEquality().hash(imageUrls),const DeepCollectionEquality().hash(sizes));
+int get hashCode => Object.hash(runtimeType,id,name,price,const DeepCollectionEquality().hash(imageUrls),const DeepCollectionEquality().hash(sizes));
 
 @override
 String toString() {
-  return 'Product(id: $id, title: $title, price: $price, imageUrls: $imageUrls, sizes: $sizes)';
+  return 'Product(id: $id, name: $name, price: $price, imageUrls: $imageUrls, sizes: $sizes)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ProductCopyWith<$Res>  {
   factory $ProductCopyWith(Product value, $Res Function(Product) _then) = _$ProductCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, int price, List<String> imageUrls, List<String> sizes
+ String id, String name, int price, List<String> imageUrls, List<String> sizes
 });
 
 
@@ -62,10 +62,10 @@ class _$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? price = null,Object? imageUrls = null,Object? sizes = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? price = null,Object? imageUrls = null,Object? sizes = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
 as int,imageUrls: null == imageUrls ? _self.imageUrls : imageUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,sizes: null == sizes ? _self.sizes : sizes // ignore: cast_nullable_to_non_nullable
@@ -154,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  int price,  List<String> imageUrls,  List<String> sizes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  int price,  List<String> imageUrls,  List<String> sizes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);case _:
+return $default(_that.id,_that.name,_that.price,_that.imageUrls,_that.sizes);case _:
   return orElse();
 
 }
@@ -175,10 +175,10 @@ return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  int price,  List<String> imageUrls,  List<String> sizes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  int price,  List<String> imageUrls,  List<String> sizes)  $default,) {final _that = this;
 switch (_that) {
 case _Product():
-return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);case _:
+return $default(_that.id,_that.name,_that.price,_that.imageUrls,_that.sizes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +195,10 @@ return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  int price,  List<String> imageUrls,  List<String> sizes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  int price,  List<String> imageUrls,  List<String> sizes)?  $default,) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);case _:
+return $default(_that.id,_that.name,_that.price,_that.imageUrls,_that.sizes);case _:
   return null;
 
 }
@@ -210,11 +210,11 @@ return $default(_that.id,_that.title,_that.price,_that.imageUrls,_that.sizes);ca
 
 
 class _Product extends Product {
-  const _Product({required this.id, required this.title, required this.price, final  List<String> imageUrls = const <String>[], final  List<String> sizes = const <String>[]}): _imageUrls = imageUrls,_sizes = sizes,super._();
+  const _Product({required this.id, required this.name, required this.price, final  List<String> imageUrls = const <String>[], final  List<String> sizes = const <String>[]}): _imageUrls = imageUrls,_sizes = sizes,super._();
   
 
 @override final  String id;
-@override final  String title;
+@override final  String name;
 @override final  int price;
  final  List<String> _imageUrls;
 @override@JsonKey() List<String> get imageUrls {
@@ -241,16 +241,16 @@ _$ProductCopyWith<_Product> get copyWith => __$ProductCopyWithImpl<_Product>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.price, price) || other.price == price)&&const DeepCollectionEquality().equals(other._imageUrls, _imageUrls)&&const DeepCollectionEquality().equals(other._sizes, _sizes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.price, price) || other.price == price)&&const DeepCollectionEquality().equals(other._imageUrls, _imageUrls)&&const DeepCollectionEquality().equals(other._sizes, _sizes));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,price,const DeepCollectionEquality().hash(_imageUrls),const DeepCollectionEquality().hash(_sizes));
+int get hashCode => Object.hash(runtimeType,id,name,price,const DeepCollectionEquality().hash(_imageUrls),const DeepCollectionEquality().hash(_sizes));
 
 @override
 String toString() {
-  return 'Product(id: $id, title: $title, price: $price, imageUrls: $imageUrls, sizes: $sizes)';
+  return 'Product(id: $id, name: $name, price: $price, imageUrls: $imageUrls, sizes: $sizes)';
 }
 
 
@@ -261,7 +261,7 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
   factory _$ProductCopyWith(_Product value, $Res Function(_Product) _then) = __$ProductCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, int price, List<String> imageUrls, List<String> sizes
+ String id, String name, int price, List<String> imageUrls, List<String> sizes
 });
 
 
@@ -278,10 +278,10 @@ class __$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? price = null,Object? imageUrls = null,Object? sizes = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? price = null,Object? imageUrls = null,Object? sizes = null,}) {
   return _then(_Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
 as int,imageUrls: null == imageUrls ? _self._imageUrls : imageUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,sizes: null == sizes ? _self._sizes : sizes // ignore: cast_nullable_to_non_nullable

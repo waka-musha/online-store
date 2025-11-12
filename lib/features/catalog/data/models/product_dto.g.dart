@@ -7,24 +7,20 @@ part of 'product_dto.dart';
 // **************************************************************************
 
 ProductDto _$ProductDtoFromJson(Map<String, dynamic> json) => ProductDto(
-  id: json['id'] as String,
-  title: json['title'] as String,
-  price: (json['price'] as num).toInt(),
-  imageUrls:
-      (json['image_urls'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const <String>[],
-  sizes:
-      (json['sizes'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const <String>[],
+  id: ProductDto._idToString(json['id']),
+  name: json['name'] as String?,
+  price: (json['price'] as num?)?.toInt(),
+  finalPrice: (json['final_price'] as num?)?.toInt(),
+  images: json['photos'] as List<dynamic>?,
+  sizeDetails: json['size_details'] as List<dynamic>?,
 );
 
 Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'title': instance.title,
+      'name': instance.name,
       'price': instance.price,
-      'image_urls': instance.imageUrls,
-      'sizes': instance.sizes,
+      'final_price': instance.finalPrice,
+      'photos': instance.images,
+      'size_details': instance.sizeDetails,
     };
