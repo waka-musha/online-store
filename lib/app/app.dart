@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_cubit.dart';
-
+import '../features/cart/presentation/bloc/cart_bloc.dart';
 import '../features/catalog/data/api/catalog_api.dart';
 import '../features/catalog/data/repository/catalog_repository_impl.dart';
 import '../features/catalog/domain/repository/catalog_repository.dart';
@@ -38,6 +38,9 @@ class App extends StatelessWidget {
           create: (context) => CatalogBloc(
             repository: context.read<CatalogRepository>(),
           ),
+        ),
+        BlocProvider<CartBloc>(
+          create: (_) => CartBloc(),
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(

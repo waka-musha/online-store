@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/failure/failure.dart';
 import '../../../../core/theme/theme_cubit.dart';
+import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../cart/presentation/pages/cart_page.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/product.dart';
 import '../bloc/catalog_bloc.dart';
@@ -18,8 +20,6 @@ class CatalogPage extends StatefulWidget {
 
 class _CatalogPageState extends State<CatalogPage> {
   final ScrollController _scrollController = ScrollController();
-
-  int _cartCount = 0;
 
   @override
   void initState() {
@@ -47,9 +47,6 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   void _onProductAddedToCart(Product product) {
-    setState(() {
-      _cartCount++;
-    });
     _showCartBanner();
   }
 
@@ -101,9 +98,27 @@ class _CatalogPageState extends State<CatalogPage> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: _CartPillButton(
-            count: _cartCount,
-            onPressed: () {},
+          child: BlocBuilder<CartBloc, CartState>(
+            buildWhen: (previous, current) {
+              if (previous is! CartLoadedState || current is! CartLoadedState) {
+                return previous.runtimeType != current.runtimeType;
+              }
+              return previous.totalItems != current.totalItems;
+            },
+            builder: (context, state) {
+              final count = state is CartLoadedState ? state.totalItems : 0;
+
+              return _CartPillButton(
+                count: count,
+                onPressed: () async {
+                  await Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CartPage(),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -300,6 +315,7 @@ class _LoadedView extends StatelessWidget {
     void Function(Product product) onProductAdded,
   ) async {
     final theme = Theme.of(context);
+    final cartBloc = context.read<CartBloc>();
 
     final selectedSize = await showModalBottomSheet<String>(
       context: context,
@@ -313,6 +329,13 @@ class _LoadedView extends StatelessWidget {
     );
 
     if (product.hasSizes && selectedSize == null) return;
+
+    cartBloc.add(
+      AddCartItemEvent(
+        product: product,
+        sizeName: selectedSize,
+      ),
+    );
 
     onProductAdded(product);
   }
