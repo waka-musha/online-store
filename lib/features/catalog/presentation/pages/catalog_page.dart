@@ -47,9 +47,14 @@ class _CatalogPageState extends State<CatalogPage> {
     appBar: AppBar(
       centerTitle: true,
       title: const Text('Каталог товаров'),
-      actions: const [
-        _CartActionButton(count: 0, onPressed: null),
-        SizedBox(width: 8),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: _CartPillButton(
+            count: 0,
+            onPressed: () {},
+          ),
+        ),
       ],
     ),
     body: SafeArea(
@@ -88,45 +93,57 @@ class _CatalogPageState extends State<CatalogPage> {
   );
 }
 
-class _CartActionButton extends StatelessWidget {
+class _CartPillButton extends StatelessWidget {
   final int count;
   final VoidCallback? onPressed;
 
-  const _CartActionButton({required this.count, required this.onPressed});
+  const _CartPillButton({
+    required this.count,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final button = IconButton(
-      onPressed: onPressed,
-      icon: const Icon(Icons.shopping_bag_outlined),
-      tooltip: 'Корзина',
-    );
+    final scheme = Theme.of(context).colorScheme;
+    final background = scheme.primary;
+    final foreground = scheme.onPrimary;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        button,
-        Positioned(
-          right: 6,
-          top: 6,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-            child: Text(
-              '$count',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                height: 1,
+    return Tooltip(
+      message: 'Корзина',
+      child: Material(
+        color: background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        child: InkWell(
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+          ),
+          onTap: onPressed,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 32),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$count',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 18,
+                    color: foreground,
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -237,6 +254,7 @@ class _IntroBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -247,7 +265,9 @@ class _IntroBlock extends StatelessWidget {
               'Каждый день тысячи девушек распаковывают пакеты с новинками '
               'Lichi и становятся счастливее, ведь очевидно, что новое платье '
               'может изменить день, а с ним и всю жизнь!',
-              style: textTheme.bodyMedium?.copyWith(height: 1.35),
+              style: textTheme.bodySmall?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.9),
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -262,7 +282,6 @@ class _ThemeButtonsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isDark = context.select<ThemeCubit, bool>(
       (cubit) => cubit.state.mode == ThemeMode.dark,
     );
@@ -273,10 +292,10 @@ class _ThemeButtonsRow extends StatelessWidget {
         children: [
           Expanded(
             child: _ThemeCardButton(
-              icon: Icons.nightlight_round,
+              icon: Icons.nightlight_sharp,
               label: 'Темная тема',
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              foregroundColor: colorScheme.onSurface,
+              backgroundColor: const Color(0xFFF4F4F4),
+              foregroundColor: Colors.black,
               isSelected: isDark,
               onTap: () => context.read<ThemeCubit>().setDark(),
             ),
@@ -284,10 +303,10 @@ class _ThemeButtonsRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _ThemeCardButton(
-              icon: Icons.wb_sunny_outlined,
+              icon: Icons.sunny,
               label: 'Светлая тема',
-              backgroundColor: colorScheme.inverseSurface,
-              foregroundColor: colorScheme.onInverseSurface,
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
               isSelected: !isDark,
               onTap: () => context.read<ThemeCubit>().setLight(),
             ),
@@ -318,12 +337,21 @@ class _ThemeCardButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(20);
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    final effectiveBackgroundColor = isSelected
+        ? backgroundColor
+        : (theme.brightness == Brightness.dark
+              ? backgroundColor.withValues(alpha: 0.5)
+              : backgroundColor.withValues(alpha: 0.1));
+
     return InkWell(
       borderRadius: borderRadius,
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          color: backgroundColor,
+          color: effectiveBackgroundColor,
           borderRadius: borderRadius,
         ),
         child: Padding(
@@ -335,9 +363,8 @@ class _ThemeCardButton extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: textTheme.labelMedium?.copyWith(
                   color: foregroundColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
@@ -359,12 +386,24 @@ class _CategoryTabs extends StatelessWidget {
     required this.onSelected,
   });
 
+  double _textWidth(
+    BuildContext context,
+    String text,
+    TextStyle style,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox(height: 8);
 
     final textTheme = Theme.of(context).textTheme;
-    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return SizedBox(
       height: 40,
@@ -376,28 +415,44 @@ class _CategoryTabs extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = category.code == selectedCode;
+
+          final baseStyle = isSelected
+              ? textTheme.titleSmall
+              : textTheme.bodyMedium;
+
+          final textStyle =
+              baseStyle?.copyWith(
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ) ??
+              const TextStyle(fontSize: 14);
+
+          final underlineWidth = _textWidth(
+            context,
+            category.title,
+            textStyle,
+          );
+
+          final textColor =
+              textStyle.color ?? Theme.of(context).colorScheme.onSurface;
+
           return InkWell(
             onTap: () => onSelected(category.code),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   category.title,
-                  style:
-                      (isSelected ? textTheme.titleSmall : textTheme.bodyMedium)
-                          ?.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                          ),
+                  style: textStyle,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   height: 2,
-                  width: isSelected ? 28 : 0,
+                  width: isSelected ? underlineWidth : 0,
                   decoration: BoxDecoration(
-                    color: isSelected ? primaryColor : Colors.transparent,
+                    color: textColor,
                     borderRadius: BorderRadius.circular(1),
                   ),
                 ),
@@ -432,12 +487,21 @@ class _ProductCardState extends State<_ProductCard> {
     final images = product.imageUrls.isNotEmpty
         ? product.imageUrls
         : const [''];
+    final theme = Theme.of(context);
+
+    final placeholderColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.surfaceContainerHighest
+        : Colors.white;
 
     return InkWell(
       onTap: widget.onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Card(
+        margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
           children: [
             Expanded(
@@ -448,59 +512,95 @@ class _ProductCardState extends State<_ProductCard> {
                     itemCount: images.length,
                     onPageChanged: (index) =>
                         setState(() => _currentImagePage = index),
-                    itemBuilder: (_, index) {
+                    itemBuilder: (context, index) {
                       final imageUrl = images[index];
+                      final theme = Theme.of(context);
+
+                      final placeholderColor =
+                          theme.brightness == Brightness.dark
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : Colors.white;
+
                       if (imageUrl.isEmpty) {
-                        return const ColoredBox(color: Color(0x11000000));
+                        return ColoredBox(color: placeholderColor);
                       }
+
                       return Image.network(
                         imageUrl,
                         fit: BoxFit.cover,
-                        gaplessPlayback: true,
                         loadingBuilder: (context, child, progress) =>
                             progress == null
                             ? child
-                            : const ColoredBox(color: Color(0x11000000)),
+                            : ColoredBox(color: placeholderColor),
                         errorBuilder: (_, _, _) =>
-                            const ColoredBox(color: Color(0x11000000)),
+                            ColoredBox(color: placeholderColor),
                       );
                     },
                   ),
                   if (images.length > 1)
                     Positioned(
+                      left: 8,
                       bottom: 8,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          images.length,
-                          (index) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            width: 6,
-                            height: 6,
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: index == _currentImagePage
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.white70,
-                            ),
-                          ),
-                        ),
+                      child: _ImagePageIndicator(
+                        itemCount: images.length,
+                        currentIndex: _currentImagePage,
                       ),
                     ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
+            Container(
+              width: double.infinity,
+              color: theme.scaffoldBackgroundColor,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
               child: _ProductTileInfo(
                 title: product.name,
                 price: product.price,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImagePageIndicator extends StatelessWidget {
+  final int itemCount;
+  final int currentIndex;
+
+  const _ImagePageIndicator({
+    required this.itemCount,
+    required this.currentIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = itemCount.clamp(1, 3);
+    final activeIndex = currentIndex % count;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(count, (index) {
+            final isActive = index == activeIndex;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive ? Colors.black : Colors.white,
+              ),
+            );
+          }),
         ),
       ),
     );
@@ -519,17 +619,31 @@ class _ProductTileInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final priceStyle = textTheme.titleMedium?.copyWith(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    );
+    final descriptionStyle = textTheme.bodyMedium?.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w300,
+    );
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
+        Text(
+          '$price руб.',
+          style: priceStyle,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
         Text(
           title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: textTheme.bodyMedium,
+          style: descriptionStyle,
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 4),
-        Text('$price ₽', style: textTheme.titleMedium),
       ],
     );
   }
@@ -549,52 +663,133 @@ class _ProductSheetState extends State<_ProductSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final availableSizes = widget.product.sizes;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        top: false,
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final sizes = widget.product.sizes;
+    final priceText = _formatPrice(widget.product.price);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              widget.product.name,
-              style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             const SizedBox(height: 12),
-            if (availableSizes.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final size in availableSizes)
-                    ChoiceChip(
-                      label: Text(size),
-                      selected: _selectedSize == size,
-                      onSelected: (_) => setState(() => _selectedSize = size),
-                    ),
-                ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Выберите размер',
+                style: textTheme.titleMedium,
               ),
-            const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sizes.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 2),
+              itemBuilder: (context, index) {
+                final size = sizes[index];
+                final selected = _selectedSize == size;
+                final bool isAvailable = true;
+
+                return InkWell(
+                  onTap: isAvailable
+                      ? () => setState(() => _selectedSize = size)
+                      : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          size,
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isAvailable)
+                          Text(
+                            'нет в наличии',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 4),
+            const Divider(height: 1),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text('Как подобрать размер?'),
+              ),
+            ),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
+                style: ButtonStyle(
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                  padding: const WidgetStatePropertyAll(
+                    EdgeInsets.symmetric(vertical: 18),
+                  ),
+                ),
                 onPressed: () {
-                  if (widget.product.hasSizes && _selectedSize == null) return;
-                  Navigator.of(context).pop(_selectedSize);
+                  if (widget.product.hasSizes && _selectedSize == null) {
+                    return;
+                  }
+                  Navigator.of(context).pop<String?>(_selectedSize);
                 },
-                child: const Text('Добавить'),
+                child: Text('В корзину · $priceText руб.'),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatPrice(int price) {
+    final s = price.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      final rev = s.length - i;
+      buf.write(s[i]);
+      if (rev > 1 && rev % 3 == 1) buf.write(' ');
+    }
+    return buf.toString();
   }
 }
 
