@@ -45,9 +45,11 @@ final class CatalogBloc extends Bloc<CatalogEvent, CatalogState> {
     categories = categoriesOk;
 
     if (event.preferredCategoryCode != null &&
-        categories.any((c) => c.code == event.preferredCategoryCode)) {
+        categories.any(
+          (category) => category.code == event.preferredCategoryCode,
+        )) {
       selected = categories.firstWhere(
-        (c) => c.code == event.preferredCategoryCode,
+        (category) => category.code == event.preferredCategoryCode,
       );
     } else if (categories.isNotEmpty) {
       selected = categories.first;

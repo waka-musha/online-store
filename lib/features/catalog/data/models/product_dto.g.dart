@@ -11,8 +11,16 @@ ProductDto _$ProductDtoFromJson(Map<String, dynamic> json) => ProductDto(
   name: json['name'] as String?,
   price: (json['price'] as num?)?.toInt(),
   finalPrice: (json['final_price'] as num?)?.toInt(),
-  images: json['photos'] as List<dynamic>?,
-  sizeDetails: json['size_details'] as List<dynamic>?,
+  photos:
+      (json['photos'] as List<dynamic>?)
+          ?.map((e) => ProductPhotoDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ProductPhotoDto>[],
+  sizeDetails:
+      (json['size_details'] as List<dynamic>?)
+          ?.map((e) => ProductSizeDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ProductSizeDto>[],
 );
 
 Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
@@ -21,6 +29,6 @@ Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
       'name': instance.name,
       'price': instance.price,
       'final_price': instance.finalPrice,
-      'photos': instance.images,
+      'photos': instance.photos,
       'size_details': instance.sizeDetails,
     };

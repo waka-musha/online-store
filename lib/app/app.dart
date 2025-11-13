@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../core/theme/app_theme.dart';
+import '../core/theme/theme_cubit.dart';
+
 import '../features/catalog/data/api/catalog_api.dart';
 import '../features/catalog/data/repository/catalog_repository_impl.dart';
 import '../features/catalog/domain/repository/catalog_repository.dart';
@@ -21,23 +24,31 @@ class App extends StatelessWidget {
         create: (context) => CatalogApi(context.read<Dio>()),
       ),
       RepositoryProvider<CatalogRepository>(
-        create: (context) =>
-            CatalogRepositoryImpl(api: context.read<CatalogApi>()),
+        create: (context) => CatalogRepositoryImpl(
+          api: context.read<CatalogApi>(),
+        ),
       ),
     ],
     child: MultiBlocProvider(
       providers: [
+        BlocProvider<ThemeCubit>(
+          create: (_) => ThemeCubit(),
+        ),
         BlocProvider<CatalogBloc>(
-          create: (context) =>
-              CatalogBloc(repository: context.read<CatalogRepository>()),
+          create: (context) => CatalogBloc(
+            repository: context.read<CatalogRepository>(),
+          ),
         ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Shop Demo',
-        theme: ThemeData.light(useMaterial3: true),
-        darkTheme: ThemeData.dark(useMaterial3: true),
-        home: const CatalogPage(),
+      child: BlocBuilder<ThemeCubit, ThemeState>(
+        builder: (context, themeState) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Shop Demo',
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeState.mode,
+          home: const CatalogPage(),
+        ),
       ),
     ),
   );

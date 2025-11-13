@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/failure/failure.dart';
+import '../../../../core/theme/theme_cubit.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/product.dart';
 import '../bloc/catalog_bloc.dart';
@@ -14,55 +15,63 @@ class CatalogPage extends StatefulWidget {
 }
 
 class _CatalogPageState extends State<CatalogPage> {
-  final _scroll = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     context.read<CatalogBloc>().add(const LoadCatalogEvent());
-    _scroll.addListener(_onScroll);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scroll
+    _scrollController
       ..removeListener(_onScroll)
       ..dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (!_scroll.hasClients) return;
+    if (!_scrollController.hasClients) return;
     const threshold = 250;
-    final max = _scroll.position.maxScrollExtent;
-    final offset = _scroll.offset;
-    if (max - offset <= threshold) {
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final offset = _scrollController.offset;
+    if (maxExtent - offset <= threshold) {
       context.read<CatalogBloc>().add(const LoadNextPageEvent());
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Каталог')),
+    appBar: AppBar(
+      centerTitle: true,
+      title: const Text('Каталог товаров'),
+      actions: const [
+        _CartActionButton(count: 0, onPressed: null),
+        SizedBox(width: 8),
+      ],
+    ),
     body: SafeArea(
       child: BlocBuilder<CatalogBloc, CatalogState>(
-        buildWhen: (prev, next) =>
-            prev.runtimeType != next.runtimeType || next is CatalogLoadedState,
+        buildWhen: (previous, current) =>
+            previous.runtimeType != current.runtimeType ||
+            current is CatalogLoadedState,
         builder: (context, state) => AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: switch (state) {
             CatalogInitialState() ||
             CatalogLoadingState() => const _CenteredLoader(),
-            CatalogErrorState(failure: final fail) => _ErrorView(
+            CatalogErrorState(failure: final failure) => _ErrorView(
               key: const ValueKey('catalog_error'),
-              message: _failureToMessage(fail),
+              message: _failureToMessage(failure),
               onRetry: () =>
                   context.read<CatalogBloc>().add(const LoadCatalogEvent()),
             ),
             CatalogLoadedState() => _LoadedView(
               key: const ValueKey('catalog_loaded'),
               state: state,
-              controller: _scroll,
+              controller: _scrollController,
             ),
           },
         ),
@@ -70,13 +79,56 @@ class _CatalogPageState extends State<CatalogPage> {
     ),
   );
 
-  String _failureToMessage(Failure f) => f.when(
-    network: (_, msg) => msg ?? 'Проблема с соединением',
-    api: (_, msg) => msg ?? 'Ошибка сервера',
-    parsing: (msg) => msg ?? 'Ошибка данных',
+  static String _failureToMessage(Failure failure) => failure.when(
+    network: (_, message) => message ?? 'Проблема с соединением',
+    api: (_, message) => message ?? 'Ошибка сервера',
+    parsing: (message) => message ?? 'Ошибка данных',
     empty: () => 'Пусто',
     unknown: (_, _) => 'Неизвестная ошибка',
   );
+}
+
+class _CartActionButton extends StatelessWidget {
+  final int count;
+  final VoidCallback? onPressed;
+
+  const _CartActionButton({required this.count, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final button = IconButton(
+      onPressed: onPressed,
+      icon: const Icon(Icons.shopping_bag_outlined),
+      tooltip: 'Корзина',
+    );
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          right: 6,
+          top: 6,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+            child: Text(
+              '$count',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _CenteredLoader extends StatelessWidget {
@@ -104,8 +156,18 @@ class _LoadedView extends StatelessWidget {
     child: CustomScrollView(
       controller: controller,
       slivers: [
+        const SliverToBoxAdapter(
+          child: Column(
+            children: [
+              _IntroBlock(),
+              SizedBox(height: 12),
+              _ThemeButtonsRow(),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
         SliverToBoxAdapter(
-          child: _CategoryChips(
+          child: _CategoryTabs(
             categories: state.categories,
             selectedCode: state.selectedCategoryCode,
             onSelected: (code) => context.read<CatalogBloc>().add(
@@ -113,6 +175,7 @@ class _LoadedView extends StatelessWidget {
             ),
           ),
         ),
+        const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverPadding(
           padding: const EdgeInsets.all(12),
           sliver: SliverGrid(
@@ -149,7 +212,10 @@ class _LoadedView extends StatelessWidget {
     ),
   );
 
-  Future<void> _openProductSheet(BuildContext context, Product product) async {
+  static Future<void> _openProductSheet(
+    BuildContext context,
+    Product product,
+  ) async {
     final selectedSize = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -165,12 +231,129 @@ class _LoadedView extends StatelessWidget {
   }
 }
 
-class _CategoryChips extends StatelessWidget {
+class _IntroBlock extends StatelessWidget {
+  const _IntroBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Text(
+              'Каждый день тысячи девушек распаковывают пакеты с новинками '
+              'Lichi и становятся счастливее, ведь очевидно, что новое платье '
+              'может изменить день, а с ним и всю жизнь!',
+              style: textTheme.bodyMedium?.copyWith(height: 1.35),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeButtonsRow extends StatelessWidget {
+  const _ThemeButtonsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = context.select<ThemeCubit, bool>(
+      (cubit) => cubit.state.mode == ThemeMode.dark,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ThemeCardButton(
+              icon: Icons.nightlight_round,
+              label: 'Темная тема',
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              foregroundColor: colorScheme.onSurface,
+              isSelected: isDark,
+              onTap: () => context.read<ThemeCubit>().setDark(),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ThemeCardButton(
+              icon: Icons.wb_sunny_outlined,
+              label: 'Светлая тема',
+              backgroundColor: colorScheme.inverseSurface,
+              foregroundColor: colorScheme.onInverseSurface,
+              isSelected: !isDark,
+              onTap: () => context.read<ThemeCubit>().setLight(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeCardButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeCardButton({
+    required this.icon,
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(20);
+    return InkWell(
+      borderRadius: borderRadius,
+      onTap: onTap,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: borderRadius,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: foregroundColor),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: foregroundColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryTabs extends StatelessWidget {
   final List<Category> categories;
   final String selectedCode;
   final ValueChanged<String> onSelected;
 
-  const _CategoryChips({
+  const _CategoryTabs({
     required this.categories,
     required this.selectedCode,
     required this.onSelected,
@@ -180,23 +363,48 @@ class _CategoryChips extends StatelessWidget {
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox(height: 8);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: SingleChildScrollView(
+    final textTheme = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final category in categories)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(category.title),
-                  selected: category.code == selectedCode,
-                  onSelected: (_) => onSelected(category.code),
+        itemCount: categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = category.code == selectedCode;
+          return InkWell(
+            onTap: () => onSelected(category.code),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  category.title,
+                  style:
+                      (isSelected ? textTheme.titleSmall : textTheme.bodyMedium)
+                          ?.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
                 ),
-              ),
-          ],
-        ),
+                const SizedBox(height: 6),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 2,
+                  width: isSelected ? 28 : 0,
+                  decoration: BoxDecoration(
+                    color: isSelected ? primaryColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -216,7 +424,7 @@ class _ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<_ProductCard> {
-  int _page = 0;
+  int _currentImagePage = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -238,17 +446,19 @@ class _ProductCardState extends State<_ProductCard> {
                 children: [
                   PageView.builder(
                     itemCount: images.length,
-                    onPageChanged: (i) => setState(() => _page = i),
-                    itemBuilder: (_, i) {
-                      final url = images[i];
-                      if (url.isEmpty) {
+                    onPageChanged: (index) =>
+                        setState(() => _currentImagePage = index),
+                    itemBuilder: (_, index) {
+                      final imageUrl = images[index];
+                      if (imageUrl.isEmpty) {
                         return const ColoredBox(color: Color(0x11000000));
                       }
                       return Image.network(
-                        url,
+                        imageUrl,
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
-                        loadingBuilder: (c, child, progress) => progress == null
+                        loadingBuilder: (context, child, progress) =>
+                            progress == null
                             ? child
                             : const ColoredBox(color: Color(0x11000000)),
                         errorBuilder: (_, _, _) =>
@@ -265,14 +475,14 @@ class _ProductCardState extends State<_ProductCard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
                           images.length,
-                          (i) => AnimatedContainer(
+                          (index) => AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             width: 6,
                             height: 6,
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: i == _page
+                              color: index == _currentImagePage
                                   ? Theme.of(context).colorScheme.primary
                                   : Colors.white70,
                             ),
@@ -308,7 +518,7 @@ class _ProductTileInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,10 +526,10 @@ class _ProductTileInfo extends StatelessWidget {
           title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: style.bodyMedium,
+          style: textTheme.bodyMedium,
         ),
         const SizedBox(height: 4),
-        Text('$price ₽', style: style.titleMedium),
+        Text('$price ₽', style: textTheme.titleMedium),
       ],
     );
   }
@@ -335,11 +545,11 @@ class _ProductSheet extends StatefulWidget {
 }
 
 class _ProductSheetState extends State<_ProductSheet> {
-  String? _size;
+  String? _selectedSize;
 
   @override
   Widget build(BuildContext context) {
-    final sizes = widget.product.sizes;
+    final availableSizes = widget.product.sizes;
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -357,16 +567,16 @@ class _ProductSheetState extends State<_ProductSheet> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            if (sizes.isNotEmpty)
+            if (availableSizes.isNotEmpty)
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final s in sizes)
+                  for (final size in availableSizes)
                     ChoiceChip(
-                      label: Text(s),
-                      selected: _size == s,
-                      onSelected: (_) => setState(() => _size = s),
+                      label: Text(size),
+                      selected: _selectedSize == size,
+                      onSelected: (_) => setState(() => _selectedSize = size),
                     ),
                 ],
               ),
@@ -375,8 +585,8 @@ class _ProductSheetState extends State<_ProductSheet> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () {
-                  if (widget.product.hasSizes && _size == null) return;
-                  Navigator.of(context).pop(_size);
+                  if (widget.product.hasSizes && _selectedSize == null) return;
+                  Navigator.of(context).pop(_selectedSize);
                 },
                 child: const Text('Добавить'),
               ),
