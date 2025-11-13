@@ -16,11 +16,9 @@ ProductDto _$ProductDtoFromJson(Map<String, dynamic> json) => ProductDto(
           ?.map((e) => ProductPhotoDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <ProductPhotoDto>[],
-  sizeDetails:
-      (json['size_details'] as List<dynamic>?)
-          ?.map((e) => ProductSizeDto.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <ProductSizeDto>[],
+  sizes: json['sizes'] == null
+      ? const <ProductSizeDto>[]
+      : ProductDto._sizesFromJson(json['sizes']),
 );
 
 Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
@@ -30,5 +28,5 @@ Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
       'price': instance.price,
       'final_price': instance.finalPrice,
       'photos': instance.photos,
-      'size_details': instance.sizeDetails,
+      'sizes': instance.sizes,
     };

@@ -11,17 +11,20 @@ abstract final class ProductMapper {
         .toSet()
         .toList(growable: false);
 
-    final sizes = dto.sizeDetails
-        .map((s) => s.rus)
-        .whereType<String>()
-        .where((s) => s.isNotEmpty)
-        .toSet()
+    final sizes = dto.sizes
+        .map(
+          (s) => ProductSize(
+            name: (s.name ?? '').trim(),
+            isAvailable: s.isAvailable,
+          ),
+        )
+        .where((s) => s.name.isNotEmpty)
         .toList(growable: false);
 
     return Product(
       id: dto.id,
-      name: dto.name!.trim(),
-      price: dto.price!,
+      name: dto.name?.trim() ?? '',
+      price: dto.price ?? dto.finalPrice ?? 0,
       imageUrls: imageUrls,
       sizes: sizes,
     );

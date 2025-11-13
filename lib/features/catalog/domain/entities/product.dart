@@ -11,8 +11,18 @@ abstract class Product with _$Product {
     required String name,
     required int price,
     @Default(<String>[]) List<String> imageUrls,
-    @Default(<String>[]) List<String> sizes,
+    @Default(<ProductSize>[]) List<ProductSize> sizes,
   }) = _Product;
 
   bool get hasSizes => sizes.isNotEmpty;
+}
+
+@freezed
+abstract class ProductSize with _$ProductSize {
+  const ProductSize._();
+
+  const factory ProductSize({
+    required String name,
+    @Default(true) bool isAvailable,
+  }) = _ProductSize;
 }

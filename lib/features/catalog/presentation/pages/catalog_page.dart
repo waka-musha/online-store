@@ -112,7 +112,9 @@ class _CartPillButton extends StatelessWidget {
       message: 'Корзина',
       child: Material(
         color: background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+        ),
         child: InkWell(
           customBorder: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(100),
@@ -233,11 +235,17 @@ class _LoadedView extends StatelessWidget {
     BuildContext context,
     Product product,
   ) async {
+    final theme = Theme.of(context);
+
     final selectedSize = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (_) => _ProductSheet(product: product),
+      backgroundColor: Colors.transparent,
+      builder: (_) => Material(
+        color: theme.scaffoldBackgroundColor,
+        child: _ProductSheet(product: product),
+      ),
     );
 
     if (product.hasSizes && selectedSize == null) return;
@@ -256,7 +264,7 @@ class _IntroBlock extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       child: Column(
         children: [
           ConstrainedBox(
@@ -294,7 +302,7 @@ class _ThemeButtonsRow extends StatelessWidget {
             child: _ThemeCardButton(
               icon: Icons.nightlight_sharp,
               label: 'Темная тема',
-              backgroundColor: const Color(0xFFF4F4F4),
+              backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               isSelected: isDark,
               onTap: () => context.read<ThemeCubit>().setDark(),
@@ -336,15 +344,14 @@ class _ThemeCardButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(20);
     final theme = Theme.of(context);
+    final borderRadius = BorderRadius.circular(20);
     final textTheme = theme.textTheme;
+    final isDarkTheme = theme.brightness == Brightness.dark;
 
     final effectiveBackgroundColor = isSelected
         ? backgroundColor
-        : (theme.brightness == Brightness.dark
-              ? backgroundColor.withValues(alpha: 0.5)
-              : backgroundColor.withValues(alpha: 0.1));
+        : backgroundColor.withValues(alpha: isDarkTheme ? 0.5 : 0.1);
 
     return InkWell(
       borderRadius: borderRadius,
@@ -483,25 +490,23 @@ class _ProductCardState extends State<_ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final product = widget.product;
     final images = product.imageUrls.isNotEmpty
         ? product.imageUrls
         : const [''];
-    final theme = Theme.of(context);
-
     final placeholderColor = theme.brightness == Brightness.dark
         ? theme.colorScheme.surfaceContainerHighest
         : Colors.white;
+    final borderRadius = BorderRadius.circular(12);
 
     return InkWell(
       onTap: widget.onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: borderRadius,
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: borderRadius),
         child: Column(
           children: [
             Expanded(
@@ -510,28 +515,21 @@ class _ProductCardState extends State<_ProductCard> {
                 children: [
                   PageView.builder(
                     itemCount: images.length,
-                    onPageChanged: (index) =>
-                        setState(() => _currentImagePage = index),
+                    onPageChanged: (index) {
+                      setState(() => _currentImagePage = index);
+                    },
                     itemBuilder: (context, index) {
                       final imageUrl = images[index];
-                      final theme = Theme.of(context);
-
-                      final placeholderColor =
-                          theme.brightness == Brightness.dark
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : Colors.white;
-
                       if (imageUrl.isEmpty) {
                         return ColoredBox(color: placeholderColor);
                       }
-
                       return Image.network(
                         imageUrl,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                            ? child
-                            : ColoredBox(color: placeholderColor),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return ColoredBox(color: placeholderColor);
+                        },
                         errorBuilder: (_, _, _) =>
                             ColoredBox(color: placeholderColor),
                       );
@@ -582,7 +580,7 @@ class _ImagePageIndicator extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -594,7 +592,7 @@ class _ImagePageIndicator extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               width: 7,
               height: 7,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isActive ? Colors.black : Colors.white,
@@ -627,12 +625,13 @@ class _ProductTileInfo extends StatelessWidget {
       fontSize: 14,
       fontWeight: FontWeight.w300,
     );
+    final priceText = _formatPrice(price);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '$price руб.',
+          '$priceText руб.',
           style: priceStyle,
           textAlign: TextAlign.center,
         ),
@@ -698,52 +697,51 @@ class _ProductSheetState extends State<_ProductSheet> {
             ),
             const SizedBox(height: 12),
             const Divider(height: 1),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sizes.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 2),
-              itemBuilder: (context, index) {
-                final size = sizes[index];
-                final selected = _selectedSize == size;
-                final bool isAvailable = true;
+            if (sizes.isNotEmpty) ...[
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: sizes.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 2),
+                itemBuilder: (context, index) {
+                  final size = sizes[index];
+                  final selected = _selectedSize == size.name;
+                  final isAvailable = size.isAvailable;
 
-                return InkWell(
-                  onTap: isAvailable
-                      ? () => setState(() => _selectedSize = size)
-                      : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          size,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (!isAvailable)
+                  return InkWell(
+                    onTap: isAvailable
+                        ? () => setState(() => _selectedSize = size.name)
+                        : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
                           Text(
-                            'нет в наличии',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
+                            size.name,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
-                      ],
+                          const Spacer(),
+                          if (!isAvailable)
+                            Text(
+                              'нет в наличии',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 4),
-            const Divider(height: 1),
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+            ],
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
@@ -751,7 +749,6 @@ class _ProductSheetState extends State<_ProductSheet> {
                 child: const Text('Как подобрать размер?'),
               ),
             ),
-            const Divider(height: 1),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -780,17 +777,19 @@ class _ProductSheetState extends State<_ProductSheet> {
       ),
     );
   }
+}
 
-  String _formatPrice(int price) {
-    final s = price.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      final rev = s.length - i;
-      buf.write(s[i]);
-      if (rev > 1 && rev % 3 == 1) buf.write(' ');
+String _formatPrice(int price) {
+  final s = price.toString();
+  final buf = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    final rev = s.length - i;
+    buf.write(s[i]);
+    if (rev > 1 && rev % 3 == 1) {
+      buf.write(' ');
     }
-    return buf.toString();
   }
+  return buf.toString();
 }
 
 class _ErrorView extends StatelessWidget {
@@ -814,7 +813,10 @@ class _ErrorView extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Повторить')),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text('Повторить'),
+            ),
           ],
         ),
       ),

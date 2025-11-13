@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+
 import 'product_photo_dto.dart';
 import 'product_size_dto.dart';
 
@@ -12,7 +13,7 @@ class ProductDto {
     this.price,
     this.finalPrice,
     this.photos = const <ProductPhotoDto>[],
-    this.sizeDetails = const <ProductSizeDto>[],
+    this.sizes = const <ProductSizeDto>[],
   });
 
   @JsonKey(fromJson: _idToString)
@@ -30,8 +31,18 @@ class ProductDto {
   @JsonKey(name: 'photos')
   final List<ProductPhotoDto> photos;
 
-  @JsonKey(name: 'size_details')
-  final List<ProductSizeDto> sizeDetails;
+  @JsonKey(name: 'sizes', fromJson: _sizesFromJson)
+  final List<ProductSizeDto> sizes;
+
+  static List<ProductSizeDto> _sizesFromJson(Object? raw) {
+    if (raw is Map) {
+      return raw.values
+          .whereType<Map<String, dynamic>>()
+          .map(ProductSizeDto.fromJson)
+          .toList(growable: false);
+    }
+    return const <ProductSizeDto>[];
+  }
 
   factory ProductDto.fromJson(Map<String, dynamic> json) =>
       _$ProductDtoFromJson(json);

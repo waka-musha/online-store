@@ -4,9 +4,28 @@ part 'product_size_dto.g.dart';
 
 @JsonSerializable()
 class ProductSizeDto {
-  const ProductSizeDto({this.rus});
+  const ProductSizeDto({
+    this.id,
+    this.name,
+    this.amount,
+    this.amountReal,
+    this.show,
+    this.barcode,
+    this.subscribe,
+  });
 
-  final String? rus;
+  final int? id;
+  final String? name;
+  final int? amount;
+
+  @JsonKey(name: 'amount_real')
+  final int? amountReal;
+
+  final bool? show;
+  final String? barcode;
+  final bool? subscribe;
+
+  bool get isAvailable => (show ?? false) && (amountReal ?? 0) > 0;
 
   factory ProductSizeDto.fromJson(Map<String, dynamic> json) =>
       _$ProductSizeDtoFromJson(json);
