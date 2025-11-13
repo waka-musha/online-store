@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,6 +18,8 @@ class CatalogPage extends StatefulWidget {
 
 class _CatalogPageState extends State<CatalogPage> {
   final ScrollController _scrollController = ScrollController();
+
+  int _cartCount = 0;
 
   @override
   void initState() {
@@ -42,6 +46,53 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
+  void _onProductAddedToCart(Product product) {
+    setState(() {
+      _cartCount++;
+    });
+    _showCartBanner();
+  }
+
+  void _showCartBanner() {
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..hideCurrentMaterialBanner();
+
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark ? Colors.white : Colors.black;
+    final textColor = isDark ? Colors.black : Colors.white;
+
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: backgroundColor,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        content: Center(
+          child: Text(
+            'Товар успешно добавлен в корзину',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: textColor,
+            ),
+          ),
+        ),
+        actions: const [
+          SizedBox.shrink(),
+        ],
+        overflowAlignment: OverflowBarAlignment.center,
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      messenger.hideCurrentMaterialBanner();
+    });
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -51,7 +102,7 @@ class _CatalogPageState extends State<CatalogPage> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: _CartPillButton(
-            count: 0,
+            count: _cartCount,
             onPressed: () {},
           ),
         ),
@@ -77,6 +128,7 @@ class _CatalogPageState extends State<CatalogPage> {
               key: const ValueKey('catalog_loaded'),
               state: state,
               controller: _scrollController,
+              onProductAdded: _onProductAddedToCart,
             ),
           },
         ),
@@ -161,10 +213,12 @@ class _CenteredLoader extends StatelessWidget {
 class _LoadedView extends StatelessWidget {
   final CatalogLoadedState state;
   final ScrollController controller;
+  final void Function(Product product) onProductAdded;
 
   const _LoadedView({
     required this.state,
     required this.controller,
+    required this.onProductAdded,
     super.key,
   });
 
@@ -195,27 +249,36 @@ class _LoadedView extends StatelessWidget {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
-        SliverPadding(
-          padding: const EdgeInsets.all(12),
-          sliver: SliverGrid(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final product = state.products[index];
-                return _ProductCard(
-                  product: product,
-                  onTap: () => _openProductSheet(context, product),
-                );
-              },
-              childCount: state.products.length,
-            ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.6,
+        if (state.products.isEmpty)
+          const SliverToBoxAdapter(
+            child: _EmptyCategoryPlaceholder(),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.all(12),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final product = state.products[index];
+                  return _ProductCard(
+                    product: product,
+                    onTap: () => _openProductSheet(
+                      context,
+                      product,
+                      onProductAdded,
+                    ),
+                  );
+                },
+                childCount: state.products.length,
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.6,
+              ),
             ),
           ),
-        ),
         SliverToBoxAdapter(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
@@ -234,6 +297,7 @@ class _LoadedView extends StatelessWidget {
   static Future<void> _openProductSheet(
     BuildContext context,
     Product product,
+    void Function(Product product) onProductAdded,
   ) async {
     final theme = Theme.of(context);
 
@@ -250,9 +314,7 @@ class _LoadedView extends StatelessWidget {
 
     if (product.hasSizes && selectedSize == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Товар добавлен')),
-    );
+    onProductAdded(product);
   }
 }
 
@@ -790,6 +852,30 @@ String _formatPrice(int price) {
     }
   }
   return buf.toString();
+}
+
+class _EmptyCategoryPlaceholder extends StatelessWidget {
+  const _EmptyCategoryPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Center(
+        child: Text(
+          'Товары в данной категории отсутствуют,\n'
+          'пожалуйста выберите другую :(',
+          textAlign: TextAlign.center,
+          style: style,
+        ),
+      ),
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {
