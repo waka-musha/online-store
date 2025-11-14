@@ -98,9 +98,7 @@ final class CatalogBloc extends Bloc<CatalogEvent, CatalogState> {
       return;
     }
 
-    if (current is CatalogLoadedState) {
-      emit(current.copyWith(products: const [], page: 0, hasMore: true));
-    } else {
+    if (current is! CatalogLoadedState) {
       emit(const CatalogLoadingState());
     }
 
@@ -108,15 +106,16 @@ final class CatalogBloc extends Bloc<CatalogEvent, CatalogState> {
 
     pageResult.match(
       onSuccess: (PageResult<Product> page) {
-        final categories = (current is CatalogLoadedState)
+        final categories = current is CatalogLoadedState
             ? current.categories
             : const <Category>[];
+
         emit(
           CatalogLoadedState(
             categories: categories,
             selectedCategoryCode: event.categoryCode,
             products: page.items,
-            page: 1,
+            page: page.page,
             hasMore: page.hasMore,
           ),
         );

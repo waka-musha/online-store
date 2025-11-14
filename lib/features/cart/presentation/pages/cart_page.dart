@@ -4,8 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/cart_item.dart';
 import '../bloc/cart_bloc.dart';
 
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<CartBloc>().add(const LoadCartEvent());
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -19,18 +30,32 @@ class CartPage extends StatelessWidget {
     ),
     body: SafeArea(
       child: BlocBuilder<CartBloc, CartState>(
-        builder: (context, state) {
-          if (state is! CartLoadedState) {
-            return const _CenteredLoader();
-          }
-
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: state.isEmpty
-                ? const _EmptyCartView()
-                : _CartContent(state: state),
-          );
-        },
+        buildWhen: (previous, current) =>
+            previous.runtimeType != current.runtimeType ||
+            (previous is CartLoadedState &&
+                current is CartLoadedState &&
+                previous.items != current.items),
+        builder: (context, state) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: switch (state) {
+            CartLoadingState() => const _CenteredLoader(),
+            CartErrorState(message: final message) => _ErrorView(
+              key: const ValueKey('cart_error'),
+              message: message,
+              onRetry: () =>
+                  context.read<CartBloc>().add(const LoadCartEvent()),
+            ),
+            CartLoadedState() =>
+              state.isEmpty
+                  ? const _EmptyCartView(
+                      key: ValueKey('cart_empty'),
+                    )
+                  : _CartContent(
+                      key: const ValueKey('cart_content'),
+                      state: state,
+                    ),
+          },
+        ),
       ),
     ),
   );
@@ -39,7 +64,10 @@ class CartPage extends StatelessWidget {
 class _CartContent extends StatelessWidget {
   final CartLoadedState state;
 
-  const _CartContent({required this.state});
+  const _CartContent({
+    required this.state,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) => Column(
@@ -192,9 +220,7 @@ class _CartItemImage extends StatelessWidget {
                   if (progress == null) return child;
                   return ColoredBox(color: placeholderColor);
                 },
-                errorBuilder: (_, _, _) => ColoredBox(
-                  color: placeholderColor,
-                ),
+                errorBuilder: (_, _, _) => ColoredBox(color: placeholderColor),
               ),
       ),
     );
@@ -339,7 +365,7 @@ class _CartSummary extends StatelessWidget {
 }
 
 class _EmptyCartView extends StatelessWidget {
-  const _EmptyCartView();
+  const _EmptyCartView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +404,46 @@ class _CenteredLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Center(child: CircularProgressIndicator());
+}
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({
+    required this.message,
+    required this.onRetry,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: onRetry,
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 String _formatPrice(int price) {

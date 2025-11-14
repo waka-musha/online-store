@@ -577,9 +577,12 @@ class _ProductCardState extends State<_ProductCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final product = widget.product;
-    final images = product.imageUrls.isNotEmpty
-        ? product.imageUrls
-        : const [''];
+    final images = product.imageUrls
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+    if (images.isEmpty) {
+      images.add('');
+    }
     final placeholderColor = theme.brightness == Brightness.dark
         ? theme.colorScheme.surfaceContainerHighest
         : Colors.white;
@@ -593,6 +596,7 @@ class _ProductCardState extends State<_ProductCard> {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: borderRadius),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: Stack(
@@ -633,7 +637,6 @@ class _ProductCardState extends State<_ProductCard> {
               ),
             ),
             Container(
-              width: double.infinity,
               color: theme.scaffoldBackgroundColor,
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
               child: _ProductTileInfo(
@@ -703,12 +706,12 @@ class _ProductTileInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final priceStyle = textTheme.titleMedium?.copyWith(
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: FontWeight.w600,
     );
     final descriptionStyle = textTheme.bodyMedium?.copyWith(
-      fontSize: 14,
-      fontWeight: FontWeight.w300,
+      fontSize: 12,
+      fontWeight: FontWeight.w400,
     );
     final priceText = _formatPrice(price);
 
@@ -722,7 +725,7 @@ class _ProductTileInfo extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          title,
+          '$title\n',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: descriptionStyle,
